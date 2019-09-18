@@ -1,0 +1,17 @@
+#server
+server:  port: 80  tomcat:    max-threads: 100  servlet:    context-path: /
+#spring dataSource
+spring:  datasource:    type: com.alibaba.druid.pool.DruidDataSource    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql:///jtsys?useUnicode=ture&characterEncoding=utf-8&serverTimezone=gmt
+    username: scott    password: 123# springMVC  thymeleaf:
+    prefix: classpath:/templates/pages/
+    suffix: .html
+# spring AOP peizhi dai li true wei cglib false wei jdk  aop:    proxy-target-class: true
+# mybatis
+mybatis:  mapper-locations:
+  - mapper/sys/*.xml  configuration:
+    map-underscore-to-camel-case: true
+    default-statement-timeout: 30
+#spring log setting
+logging:  level:
+    com.zcs: debug    

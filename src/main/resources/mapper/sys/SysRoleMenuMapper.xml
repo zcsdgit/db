@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zcs.pj.sys.dao.SysRoleMenuDao">
+	<!-- 插入角色菜单关系数据 -->
+	<insert id="insertObjects">
+		insert into sys_role_menus(role_id,menu_id) values
+		<foreach collection="menuIds" separator="," item="menuId">
+			(#{roleId},#{menuId})
+		</foreach>
+	</insert>
+	<!-- 基于角色id查询菜单id -->
+	<select id="findMenuIdsByRoleIds" resultType="int">
+		select menu_id from sys_role_menus where role_id in 
+         <foreach collection="roleIds"
+                  open="("
+                  close=")"
+                  separator=","
+                  item="item">
+               #{item}
+         </foreach>
+	</select>
+	<!-- 基于角色id查询菜单id, 注意和上面查询不一样，此查询是角色模块，上面是用户模块，一个用户有多个角色，所以上面角色id是数组 -->
+	<!-- 注意因为这是角色模块引用的，所以在SysRoleMenuDao中不一定要有，可以直接在mapper中写，也可以直接在dao中写，mapper不写
+	在dao中写就是接口开发，在mapper写就是直接selectone的形式 -->
+	<select id="findMenuIdsByRoleId"
+              resultType="int">
+            select menu_id
+            from sys_role_menus
+            where role_id=#{id} 
+  </select>
+	
+</mapper>

@@ -1,0 +1,236 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">日志管理</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 350px;">
+						<input type="text" name="table_search" id="searchNameId"
+							class="form-control pull-right" placeholder="用户名">
+
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default btn-search">
+                                <i class="fa fa-search"></i>
+							</button>
+							<button type="button" class="btn btn-default btn-delete">删除</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+			<div class="box-body table-responsive no-padding">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+						    <th><input type="checkbox" id="checkAll">全选</th>
+							<th>用户名</th>
+							<th>操作</th>
+							<th>请求方法</th>
+							<th>请求参数</th>
+							<th>IP地址</th>
+							<th>执行时间</th>
+						</tr>
+					</thead>
+					<tbody id="tbodyId">
+					    <tr>
+					       <td colspan="7">数据加载中...</td>
+					    </tr>
+					</tbody>
+				</table>
+			</div>
+			<div id="pageId" class="box-footer clearfix">
+			      <script type="text/javascript">
+			      	$(function(){
+			      		//异步加载分页页面
+			      		$("#pageId").load("doPageUI",doGetObjects);/*两个异步加载有关联时需要考虑顺序，否则会报空指针异常，所以将doGetObjects写在load()方法里*/
+			      		//搜索事件注册
+			      		$(".input-group-btn").on("click",".btn-search",doQueryObjects)
+			      		//删除事件
+			      		$(".input-group-btn").on("click",".btn-delete",doDeleteObjects)
+			      		//thead中checkbox的状态
+			      		$("#checkAll").change(doChangeTBodyCheckboxState);
+			      		//设置tbody状态
+			      		$("#tbodyId").on("change",".cBox",doChangeTHeadCheckboxState);
+			      	})												/**如果双方没关系是可以将doGetObjects函数写在外面的*/
+			      	
+			      	//设置全不选状态
+			      	function doChangeTHeadCheckboxState(){
+			      		//1.获取所有tbody中checkbox对象状态相与的结果
+			      		var flag=true;
+			      		$("#tbodyId input[type='checkbox']").each(function(){
+			      			flag=flag&&$(this).prop("checked");
+			      		});
+			      		//2.修改thead中checkbox的值
+			      		$("#checkAll").prop("checked",flag);
+			      	}
+			      	
+			      	//全选状态设置
+			      	function doChangeTBodyCheckboxState(){
+			      		//1.获取全选(checkAll)对象的状态值
+			      		let flag=$(this).prop("checked");
+			      		//2.修改tbody中checkbox对象的状态值
+			      		$("#tbodyId input[type='checkbox']").each(function(){
+			      			$(this).prop("checked",flag);
+			      		})
+			      	}
+			      	function doDeleteObjects(){
+			      		//1.获取选中记录的id值并校验
+			      		let idArray=doGetChechedIds();//let定义变量，和var效果差不多，区别在于let定义的变量作用域是块级，而var是全局变量或函数变量
+			      		if(idArray.length==0){			//const也是声明变量，作用域和let一样，区别在于const一旦声明就要立刻赋值，且不能改变，相当于java中final修饰的变量
+			      			alert("至少选择一个");
+			      			return;
+			      		}
+			      		console.log(idArray);
+			      		//2.提示是否删除
+			      		if(!confirm("是否删除"))return;
+			      		//3.定义删除的url
+			      		var url="log/doDeleteObjects";
+			      		//4.定义删除时要传递的参数
+			      		var params={"ids":idArray.toString()};//toString方法自动转换为有逗号间隔的字符串
+			      		//5。执行异步删除业务
+			      		$.post(url,params,function(result){
+			      			if(result.state==1){
+			      				alert(result.message);
+			      				//解决当页码是最后一页时删除无法跳到上一页的问题
+			      				doChangePageCurrent();
+			      				//doGetObjects();
+			      			}else{
+			      				alert(result.message);
+			      			}
+			      		})
+			      	}
+			      	//刷新当前页码值
+			      	function doChangePageCurrent(){
+			      		//1.获取当前页码值，总页数
+			      		let pageCurrent=$("#pageId").data("pageCurrent");	
+			      		let pageCount=$("#pageId").data("pageCount");
+			      		//2.获取checkALL的状态值
+			      		let flag=$("#checkAll").prop("checked");
+			      		//3.修改当前页码值
+			      		if(pageCurrent==pageCount&&pageCurrent==1&&flag){
+			      			$("#checkAll").prop("checked",false);
+			      			$("#tbodyId").empty();
+			      			doInitPagination();
+			      			return;
+			      		}
+			      		
+			      		if(pageCurrent!=1&&pageCurrent==pageCount&&flag){
+			      			pageCurrent--;
+			      			$("#pageId").data("pageCurrent",pageCurrent);
+			      		}
+			      		doGetObjects();
+			      	}
+			      	//当删除最后一页时将页码、总页数等初始化
+			      	function doInitPagination(){
+			      		$(".rowCount").html("总记录数(0)");
+			      		$(".pageCount").html("总页数(0)");
+			      	}
+			      	
+			      	//获取选中的id值
+			      	function doGetChechedIds(){
+			      		//1.定义数组用于存储id
+			      		var array=[];//new Array();
+			      		//2.遍历所有checkbox获得选中的id
+			      		//each函数用于迭代输出
+			      		$("#tbodyId input[type='checkbox']").each(function(){//当发现checkbox则执行函数
+			      			if($(this).prop("checked")){
+			      				array.push($(this).val())
+			      			}
+			      		});
+			      		//3.返回存储id的数组
+			      		return array;
+			      	}
+			      		//点击查询按钮执行查询操作
+			      		function doQueryObjects(){
+			      		//为什么要在此位置初始化pageCurrent的值为1?
+			      		//数据查询时页码的初始位置也应该是第一页
+			      		//1.初始化当前页为1
+			      		$("#pageId").data("pageCurrent",1);
+			      		//为什么要调用doGetObjects函数？
+			     	  	//重用js代码，简化jS代码编写
+			      		//2.基于用户名查询日志信息
+			      		doGetObjects();
+			      		
+			      	}
+			      		//异步查询用户行为日志
+			      		function doGetObjects(){
+			      		debugger//断点调试(debug模式)
+			      			$("#checkAll").prop("checked",false);
+			      		//1.定义请求的url
+			      		var url="log/doFindPageObjects";
+			      		//data函数的含义：从指定元素上获取绑定的数据
+			      		//pageCurrent参数在没有赋值的情况下默认为1
+			      		var pageCurrent=$("#pageId").data("pageCurrent");//此数据会在何时进行绑定？(setPagination,doQueryObjects)
+			      		//alert(pageCurrent);//由此可知pageCurrent未赋值
+			      		if(!pageCurrent)	//判断如果未赋值则为真进行赋值,即一开始阶段是第一页
+			      			pageCurrent=1;//在JS中非0即是真，和java不一样
+			      		//2.定义请求的参数
+			      		var params={"pageCurrent":pageCurrent};/*pageCurrent=1"两种参数设置方式,前者是JSON格式的对象*/
+			      		var username=$("#searchNameId").val();
+			      		if(username)
+			      			params.username=username;//查询时需要
+			      		//3.发送异步请求(借助jquery中的ajax函数)
+			      		$.getJSON(url,params,function(result){//服务端返回的是JSON格式的字符串，但getJSON方法内部在拿到result时，会解析成JSON格式的对象
+			      			//console.log(result);//result对应的是服务端的JsonResult
+			      			//var r=JSON.parse(result);//模拟getJSON方法内部解析过程
+			      			//console.log(r);
+			      			doHandleResponseResult(result);
+			      		});
+			      		/*上面的写法等效于 
+			      		$("#pageId").load("doPageUI",function(){
+			      			doGetObjects();
+			      		})
+			      		function doGetObjects(){...}
+			      		但是这种写法就和上面说的一样会有空指针异常的风险
+			      		*/
+			      		<!--ajax的缺点是不能跨域-->
+			      	}
+			      	function doHandleResponseResult(result){
+			      		if(result.state==1){
+			      			//1.将日志记录添加到tbody中
+			      			doSetTableBodyRows(result.data.records)
+			      			//2.将日志分页信息添加到pageId位置
+			      			doSetPagination(result.data)
+			      		}else{
+			      			alert(result.message);
+			      		}
+			      	}
+			      	
+			      	function doSetTableBodyRows(records){
+			      		//1.获取tbody对象，并清空数据
+			      		var tBody=$("#tbodyId");
+			      		tBody.empty();
+			      		//2.迭代日志记录records，将其追加到tBody中
+			      		for(var i=0;i<records.length;i++){
+			      			//2.1创建tr对象
+			      			var tr=$("<tr></tr>");
+			      			//2.2创建多个td对象(多列)
+			      			var tds=doCreateTds(records[i]);
+			      			//2.3将创建的td追加到tr对象中
+			      			tr.append(tds);
+			      			//2.4将tr追加到tBody中
+			      			tBody.append(tr);
+			      		}
+			      	function doCreateTds(data){
+			     	   var tds="<td><input type='checkbox' class='cBox' name='cItem' value='"+data.id+"'></td>"+
+			     		   	 "<td>"+data.username+"</td>"+
+			     		     "<td>"+data.operation+"</td>"+
+			     		     "<td>"+data.method+"</td>"+
+			     		     "<td>"+data.params+"</td>"+
+			     		     "<td>"+data.ip+"</td>"+
+			     		     "<td>"+data.time+"</td>";	   
+			     return tds;
+			        }
+
+			      		
+			      	}
+			      	
+			      </script>
+			</div>
+			<!-- /.box-body -->
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+

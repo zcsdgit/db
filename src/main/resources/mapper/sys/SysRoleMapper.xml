@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zcs.pj.sys.dao.SysRoleDao">
+	<sql id="queryWhereId">
+		<where>
+			<if test="name!=null and name!=''">name like concat("%",#{name},"%")</if>
+		</where>
+	</sql>
+	<select id="findPageObjects"
+		resultType="com.zcs.pj.sys.entity.SysRole">
+		select *from sys_roles
+		<include refid="queryWhereId" />
+		order by createdTime desc limit #{startIndex},#{pageSize}
+	</select>
+	<select id="getRowCount" resultType="int">
+		select count(*) from sys_roles
+		<include refid="queryWhereId"></include>
+	</select>
+	<!-- useGeneratedKeys="true"表示获取写入到数据库的主键值 keyProperty="id"表示将参 -->
+	<insert id="insertObject"
+		parameterType="com.zcs.pj.sys.entity.SysRole" useGeneratedKeys="true"
+		keyProperty="id">
+		insert into sys_roles
+		(id,name,note,createdTime,modifiedTime,
+		createdUser,modifiedUser)
+		values
+		(null,#{name},#{note},now(),now(),
+		#{createdUser},#{modifiedUser})
+	</insert>
+	<!-- 何时使用resultMap?(自己定义映射规则或关联查询映射) -->
+	<!-- 自定义结果映射 -->
+	<resultMap type="com.zcs.pj.common.vo.SysRoleMenuVo"
+		id="sysRoleMenuVo">
+		<!-- 此id是基于下方查询出来的id(下面的select返回一个封装的实体，即SysRole的id)，然后传递到select中进行再次查询menuid -->
+		<collection property="menuIds" column="id"
+			select="com.zcs.pj.sys.dao.SysRoleMenuDao.findMenuIdsByRoleId">
+		</collection>
+	</resultMap>
+	
+	<select id="findObjectById" resultMap="sysRoleMenuVo">
+		select id,name,note from
+		sys_roles where id=#{id}
+	</select>
+
+	<!-- 修改数据 -->
+
+	<update id="updateObject"
+		parameterType="com.zcs.pj.sys.entity.SysRole">
+		update sys_roles
+		<set>
+			<if test="name!=null and name!=''">
+				name=#{name},
+			</if>
+			<if test="note!=null and note!=''">
+				note=#{note},
+			</if>
+			<if test="modifiedUser!=null and modifiedUser!=''">
+				modifiedUser=#{modifiedUser},
+			</if>
+			modifiedTime=now()
+		</set>
+		where id=#{id}
+	</update>
+</mapper>
